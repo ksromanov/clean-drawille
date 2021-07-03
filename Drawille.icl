@@ -31,10 +31,21 @@ brailleToList n = filter ((<>) (-1, -1))
             | ((n bitand b) > 0) = (x, y)
             | otherwise = (-1, -1)
 
-frame :: .Canvas -> [String]
-frame c=:{ size_x, size_y, real_size_x, real_size_y, data} =
-    [ line i \\ i <- [0..(size_y - 1)]]
-    where line i = ""
+toBrailleCodes :: Canvas -> {*{#Int}}
+toBrailleCodes c=:{ size_x, size_y, real_size_x, real_size_y, data} =
+    goRows bitmap 0
+    where (bitmap_x, bitmap_y) = ((size_x + 1)/2, (size_y + 3)/4)
+          bitmap = {(createArray bitmap_x 0) \\ i <- [1..bitmap_y]}
+
+          goRows bitmap row
+            | row < bitmap_y = goRows (goColumns bitmap 0 row) (row + 1)
+            | otherwise = bitmap
+
+          goColumns bitmap row col
+            | col < bitmap_x = goColumns {bitmap & [row,col] = value } row (col + 1)
+            | otherwise = bitmap
+            where value = sum [(get c (2*col + x) (4*row + y)) * pixmap.[y, x]\\ x <- [0..1], y <- [0..3]
+                                    | x < size_x - 2*col && y < size_y - 4*row]
 
 /**
  * Empty Canvas without any drawings.
@@ -126,7 +137,11 @@ toString` { size_x = sx, size_y = sy, real_size_x, data = d } = go 0 (createArra
             | e == 1 = '*'
             | otherwise = '?'
 
+Start = toBrailleCodes (fromList (brailleToList 0xF8))
+
+/*
 Start :: String
 Start = "Hello Drawille \xE2\xA0\x81\xE2\xA0\xB2\n" +++ toString` (set (set (create 8 9) 0 0) 1 2) +++
         "================================================================================\n" +++
         toString` (fromList (brailleToList 0xF8))
+*/
