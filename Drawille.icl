@@ -25,12 +25,11 @@ pixmap = {{0x01, 0x08},
 
 // Braille character code to the list of coordinates
 brailleToList :: Int -> [(Int, Int)]
-brailleToList code` = filter ((<>) (-1, -1)) 
+brailleToList n = filter ((<>) (-1, -1)) 
         (flatten [ [(coord px.[0] 0 i), (coord px.[1] 1 i)] \\ px <-: pixmap & i <- [0..3]])
     where coord b x y
             | ((n bitand b) > 0) = (x, y)
             | otherwise = (-1, -1)
-          n = code`
 
 frame :: .Canvas -> [String]
 frame c=:{ size_x, size_y, real_size_x, real_size_y, data} =
