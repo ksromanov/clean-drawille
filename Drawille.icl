@@ -18,11 +18,19 @@ undefined :: u:a
 undefined = abort "Not yet implemented."
 
 pixmap :: {#{#Int}}
-pixmap = {
-    {0x01, 0x08},
-    {0x02, 0x10},
-    {0x04, 0x20},
-    {0x40, 0x80}}
+pixmap = {{0x01, 0x08},
+          {0x02, 0x10},
+          {0x04, 0x20},
+          {0x40, 0x80}}
+
+// Braille character code to the list of coordinates
+brailleToList :: Int -> [(Int, Int)]
+brailleToList code` = filter ((<>) (-1, -1)) 
+        (flatten [ [(coord px.[0] 0 i), (coord px.[1] 1 i)] \\ px <-: pixmap & i <- [0..3]])
+    where coord b x y
+            | ((n bitand b) > 0) = (x, y)
+            | otherwise = (-1, -1)
+          n = code`
 
 frame :: .Canvas -> [String]
 frame c=:{ size_x, size_y, real_size_x, real_size_y, data} =
@@ -122,4 +130,4 @@ toString` { size_x = sx, size_y = sy, real_size_x, data = d } = go 0 (createArra
 Start :: String
 Start = "Hello Drawille \xE2\xA0\x81\xE2\xA0\xB2\n" +++ toString` (set (set (create 8 9) 0 0) 1 2) +++
         "================================================================================\n" +++
-        toString` (fromList [(i, i) \\ i <- [3..9]])
+        toString` (fromList (brailleToList 0xF8))
