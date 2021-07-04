@@ -10,6 +10,9 @@ definition module Drawille
 
 :: PixelValue :== Bool
 
+setPixel   :== True
+unsetPixel :== False
+
 /**
  * Canvas for drawing with Braille characters.
  * @var current X dimension of canvas
