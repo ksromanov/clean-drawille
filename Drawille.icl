@@ -53,7 +53,7 @@ toBrailleCodes c=:{ size_x, size_y, real_size_x, real_size_y, data} =
           bitmap = {(createArray bitmap_x 0) \\ i <- [1..bitmap_y]}
 
           goRows bitmap row
-            | row < bitmap_y = goRows (goColumns bitmap 0 row) (row + 1)
+            | row < bitmap_y = goRows (goColumns bitmap row 0) (row + 1)
             | otherwise = bitmap
 
           goColumns bitmap row col
@@ -117,13 +117,6 @@ fromList lst = go lst empty
     where go [(x, y):px] c = go px (set c x y)
           go [] c = c
 
-/*
-toPs
-toPx
-pxMap
-pxOff
-*/
-
 /**
  * Create Canvas with given dimensions. Also see {{`empty`}}.
  * @param The number of columns
@@ -152,11 +145,7 @@ toString` { size_x = sx, size_y = sy, real_size_x, data = d } = go 0 (createArra
             | e == 1 = '*'
             | otherwise = '?'
 
-Start = frame (fromList (brailleToList 0xF8))
-
-/*
 Start :: String
 Start = "Hello Drawille \xE2\xA0\x81\xE2\xA0\xB2\n" +++ toString` (set (set (create 8 9) 0 0) 1 2) +++
         "================================================================================\n" +++
         toString` (fromList (brailleToList 0xF8))
-*/
