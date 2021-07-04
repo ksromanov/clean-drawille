@@ -22,36 +22,6 @@ definition module Drawille
               real_size_x :: !Int, real_size_y :: !Int, data :: !.{#PixelValue}}
 
 /**
- * Braille character code to the list of coordinates
- *
- * @param Braille character code
- *
- * @result List of coordinates of "set" pixels
- */
-brailleToList :: !Int -> [(Int, Int)]
-
-/**
- * Recognise canvas contents as a bitmap of
- * Braille characters. Simple bit encoding based on `pixmap`
- * is used, character codes are in the range [0..255].
- *
- * @param Canvas to parse
- *
- * @result 2D array (first index - rows) of Braille chars
- */
-toBrailleCodes :: !Canvas -> {*{#Int}}
-
-/**
- * Render canvas contents as a monochrome Braille character
- * string (UTF-8 encoded).
- *
- * @param Canvas to render
- *
- * @result List of UTF-8 encoded strings
- */
-frame :: !Canvas -> [String]
-
-/**
  * Empty Canvas without any drawings. Also see {{`create`}}.
  */
 empty :: .Canvas
@@ -131,6 +101,37 @@ unset :: !*Canvas !Int !Int -> *Canvas
  * @result Updated canvas
  */
 toggle :: !*Canvas !Int !Int -> *Canvas
+
+/**
+ * Render canvas contents as a list of monochrome Braille
+ * character strings (UTF-8 encoded).
+ *
+ * @param Canvas to render
+ *
+ * @result List of UTF-8 encoded strings
+ */
+frame :: !Canvas -> [String]
+
+// Below are debug functions, used for testing.
+/**
+ * Braille character code to the list of coordinates
+ *
+ * @param Braille character code
+ *
+ * @result List of coordinates of "set" pixels
+ */
+brailleToList :: !Int -> [(Int, Int)]
+
+/**
+ * Recognise canvas contents as a bitmap of
+ * Braille characters. Simple bit encoding based on `pixmap`
+ * is used, character codes are in the range [0..255].
+ *
+ * @param Canvas to parse
+ *
+ * @result 2D array (first index - rows) of Braille chars
+ */
+toBrailleCodes :: !Canvas -> {*{#Int}}
 
 /**
  * Debug print canvas.
