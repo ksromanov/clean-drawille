@@ -150,6 +150,7 @@ resize c=:{ size_x, size_y, real_size_x, real_size_y, data} x y
 // out of range.
 updateWithValue :: !*Canvas !Int !Int !PixelValue -> *Canvas
 updateWithValue c=:{ size_x, size_y, real_size_x, data} x y v
+    | x < 0 || y < 0 = abort "updateWithValue with for negative coordinate(s)\n"
     | (x >= size_x && y >= size_y) = updateWithValue (resize c (x + 1) (y + 1)) x y v
     | x >= size_x = updateWithValue (resize c (x + 1) size_y) x y v
     | y >= size_y = updateWithValue (resize c size_x (y + 1)) x y v
