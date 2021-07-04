@@ -13,10 +13,6 @@ import StdDebug
 :: Canvas = { size_x :: !Int, size_y :: !Int,
               real_size_x :: !Int, real_size_y :: !Int, data :: !.{#Int}}
 
-// FIXME: remove in the future
-undefined :: u:a
-undefined = abort "Not yet implemented."
-
 pixmap :: {#{#Int}}
 pixmap = {{0x01, 0x08},
           {0x02, 0x10},
@@ -24,7 +20,7 @@ pixmap = {{0x01, 0x08},
           {0x40, 0x80}}
 
 // Braille character code to the list of coordinates
-brailleToList :: Int -> [(Int, Int)]
+brailleToList :: !Int -> [(Int, Int)]
 brailleToList n = filter ((<>) (-1, -1))
         (flatten [ [(coord px.[0] 0 i), (coord px.[1] 1 i)] \\ px <-: pixmap & i <- [0..3]])
     where coord b x y
@@ -32,7 +28,7 @@ brailleToList n = filter ((<>) (-1, -1))
             | otherwise = (-1, -1)
 
 // j - columns, i - row
-frame :: Canvas -> [String]
+frame :: !Canvas -> [String]
 frame c = [lineToString line \\ line <-: toBrailleCodes c]
     where lineToString line = go 0 line (createArray (3*size line) ' ')
           go :: Int .{#Int} *String -> *String
@@ -46,7 +42,7 @@ frame c = [lineToString line \\ line <-: toBrailleCodes c]
                 where v = 0xA0 + (c bitand pixmap.[3].[0])/pixmap.[3].[0]
                                + (c bitand pixmap.[3].[1])/pixmap.[3].[0]
 
-toBrailleCodes :: Canvas -> {*{#Int}}
+toBrailleCodes :: !Canvas -> {*{#Int}}
 toBrailleCodes c=:{ size_x, size_y, real_size_x, real_size_y, data} =
     goRows bitmap 0
     where (bitmap_x, bitmap_y) = ((size_x + 1)/2, (size_y + 3)/4)
@@ -123,7 +119,7 @@ fromList lst = go lst empty
  * @param The number of rows
  * @result The blank canvas.
  */
-create :: Int Int -> .Canvas
+create :: !Int !Int -> .Canvas
 create size_x size_y =
     { size_x = size_x, size_y = size_y,
       real_size_x = size_x, real_size_y = size_y,
@@ -132,7 +128,7 @@ create size_x size_y =
 /**
  * Debug print canvas.
  */
-toString` :: .Canvas -> String
+toString` :: !.Canvas -> String
 toString` { size_x = sx, size_y = sy, real_size_x, data = d } = go 0 (createArray ((sx + 1)*sy) 'u')
     where go :: !Int !*String -> *String
           go j arr
