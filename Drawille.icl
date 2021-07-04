@@ -27,7 +27,14 @@ brailleToList n = filter ((<>) (-1, -1))
             | ((n bitand b) > 0) = (x, y)
             | otherwise = (-1, -1)
 
-// j - columns, i - row
+/**
+ * Render canvas contents as a monochrome Braille character
+ * string (UTF-8 encoded).
+ *
+ * @param Canvas to render
+ *
+ * @result List of UTF-8 encoded strings
+ */
 frame :: !Canvas -> [String]
 frame c = [lineToString line \\ line <-: toBrailleCodes c]
     where lineToString line = go 0 line (createArray (3*size line) ' ')
@@ -42,6 +49,15 @@ frame c = [lineToString line \\ line <-: toBrailleCodes c]
                 where v = 0xA0 + (c bitand pixmap.[3].[0])/pixmap.[3].[0]
                                + (c bitand pixmap.[3].[1])/pixmap.[3].[0]
 
+/**
+ * Recognise canvas contents as a bitmap of
+ * Braille characters. Simple bit encoding based on `pixmap`
+ * is used, character codes are in the range [0..255].
+ *
+ * @param Canvas to parse
+ *
+ * @result 2D array (first index - rows) of Braille chars
+ */
 toBrailleCodes :: !Canvas -> {*{#Int}}
 toBrailleCodes c=:{ size_x, size_y, real_size_x, real_size_y, data} =
     goRows bitmap 0
@@ -65,14 +81,45 @@ empty :: .Canvas
 empty => { size_x = 0, size_y = 0,
            real_size_x = 0, real_size_y = 0, data = {}}
 
+/**
+ * Get the value of a pixel on canvas at given coordinates.
+ *
+ * @param The canvas
+ * @param x coordinate of the pixel (column)
+ * @param y coordinate of the pixel (row)
+ *
+ * @result The value of pixel
+ */
 get :: !Canvas !Int !Int -> Int
 get c x y = fst (uget c x y)
 
+/**
+ * Get the value of a pixel on canvas at given coordinates.
+ * Unique version.
+ *
+ * @param The canvas
+ * @param x coordinate of the pixel (column)
+ * @param y coordinate of the pixel (row)
+ *
+ * @result The value of pixel and unmodified canvas 
+ */
 uget :: !u:Canvas !Int !Int -> *(Int, v:Canvas), [u <= v]
 uget c=:{ size_x, size_y, real_size_x, data} x y
     # (v, data`) = uselect data (x + y * real_size_x)
     = (v, { c & data = data` })
 
+/**
+ * Resize canvas to match given new size_x = x and
+ * size_y = y. If new canvas does not fit underlying
+ * array, it reallocates array. It does not shrink
+ * underlying array.
+ *
+ * @param The canvas
+ * @param x coordinate of the pixel (column)
+ * @param y coordinate of the pixel (row)
+ *
+ * @result Canvas with updates size_x and size_y
+ */
 resize :: !*Canvas !Int !Int -> *Canvas
 resize c=:{ size_x, size_y, real_size_x, real_size_y, data} x y
     | (x < c.real_size_x && y < c.real_size_y) = {c & size_x = x, size_y = y} // FIXME: < -> <=
@@ -97,17 +144,54 @@ updateWithValue c=:{ size_x, size_y, real_size_x, data} x y v
     | y >= size_y = updateWithValue (resize c size_x (y + 1)) x y v
     | otherwise = {c & data = { data & [x + real_size_x * y] = v }}
 
+/**
+ * Set pixel with coordinates on Canvas.
+ *
+ * @param The canvas
+ *
+ * @param x coordinate of the pixel (column)
+ * @param y coordinate of the pixel (row)
+ *
+ * @result Updated canvas
+ */
 set :: !*Canvas !Int !Int -> *Canvas
 set c x y = updateWithValue c x y 1
 
+/**
+ * Set pixel with coordinates on Canvas.
+ *
+ * @param The canvas
+ *
+ * @param x coordinate of the pixel (column)
+ * @param y coordinate of the pixel (row)
+ *
+ * @result Updated canvas
+ */
 unset :: !*Canvas !Int !Int -> *Canvas
 unset c x y = updateWithValue c x y 0
 
+/**
+ * Toggle pixel with coordinates on Canvas.
+ *
+ * @param The canvas
+ *
+ * @param x coordinate of the pixel (column)
+ * @param y coordinate of the pixel (row)
+ *
+ * @result Updated canvas
+ */
 toggle :: !*Canvas !Int !Int -> *Canvas
 toggle c x y
     # (v, c) = uget c x y
     = updateWithValue c x y (1 - v)
 
+/**
+ * Create Canvas from list of pixel coordinates. These pixels
+ * will be set, canvas will be autoadjusted.
+ * @param The number of columns
+ * @param The number of rows
+ * @result The blank canvas.
+ */
 fromList :: [(Int, Int)] -> .Canvas
 fromList lst = go lst empty
     where go [(x, y):px] c = go px (set c x y)
@@ -127,6 +211,10 @@ create size_x size_y =
 
 /**
  * Debug print canvas.
+ *
+ * @param canvas to print.
+ *
+ * @result string, where each character represents canvas pixel.
  */
 toString` :: !.Canvas -> String
 toString` { size_x = sx, size_y = sy, real_size_x, data = d } = go 0 (createArray ((sx + 1)*sy) 'u')
