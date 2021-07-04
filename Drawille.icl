@@ -11,7 +11,10 @@ import StdDebug
  * @var array, which contains the bitmap in rows
  */
 :: Canvas = { size_x :: !Int, size_y :: !Int,
-              real_size_x :: !Int, real_size_y :: !Int, data :: !.{#Int}}
+              real_size_x :: !Int, real_size_y :: !Int, data :: !.{#Bool}}
+
+valueToInt True = 1
+valueToInt False = 0
 
 pixmap :: {#{#Int}}
 pixmap = {{0x01, 0x08},
@@ -71,7 +74,7 @@ toBrailleCodes c=:{ size_x, size_y, real_size_x, real_size_y, data} =
           goColumns bitmap row col
             | col < bitmap_x = goColumns {bitmap & [row,col] = value } row (col + 1)
             | otherwise = bitmap
-            where value = sum [(get c (2*col + x) (4*row + y)) * pixmap.[y, x]\\ x <- [0..1], y <- [0..3]
+            where value = sum [(valueToInt (get c (2*col + x) (4*row + y))) * pixmap.[y, x]\\ x <- [0..1], y <- [0..3]
                                     | x < size_x - 2*col && y < size_y - 4*row]
 
 /**
@@ -90,7 +93,7 @@ empty => { size_x = 0, size_y = 0,
  *
  * @result The value of pixel
  */
-get :: !Canvas !Int !Int -> Int
+get :: !Canvas !Int !Int -> Bool
 get c x y = fst (uget c x y)
 
 /**
@@ -103,7 +106,7 @@ get c x y = fst (uget c x y)
  *
  * @result The value of pixel and unmodified canvas 
  */
-uget :: !u:Canvas !Int !Int -> *(Int, v:Canvas), [u <= v]
+uget :: !u:Canvas !Int !Int -> *(Bool, v:Canvas), [u <= v]
 uget c=:{ size_x, size_y, real_size_x, data} x y
     # (v, data`) = uselect data (x + y * real_size_x)
     = (v, { c & data = data` })
@@ -125,10 +128,10 @@ resize c=:{ size_x, size_y, real_size_x, real_size_y, data} x y
     | (x < c.real_size_x && y < c.real_size_y) = {c & size_x = x, size_y = y} // FIXME: < -> <=
     | otherwise = { size_x = x, size_y = y,
                     real_size_x = rx, real_size_y = ry,
-                    data = go 0 data (createArray (rx * ry) 0) }
+                    data = go 0 data (createArray (rx * ry) False) }
         where (rx, ry) = (3*x/2 + 2, 3*y/2 + 2)
 
-              go :: Int !.{#Int} !*{#Int} -> *{#Int}
+              go :: Int !.{#Bool} !*{#Bool} -> *{#Bool}
               go j src dst
                  | j == size_y = dst
                  # dst = {dst & [i + dst_shift] = src.[i + src_shift] \\ i <- [0..(size_x - 1)]}
@@ -137,7 +140,7 @@ resize c=:{ size_x, size_y, real_size_x, real_size_y, data} x y
                     where src_shift = j*real_size_x
                           dst_shift = j*rx
 
-updateWithValue :: !*Canvas !Int !Int !Int -> *Canvas
+updateWithValue :: !*Canvas !Int !Int !Bool -> *Canvas
 updateWithValue c=:{ size_x, size_y, real_size_x, data} x y v
     | (x >= size_x && y >= size_y) = updateWithValue (resize c (x + 1) (y + 1)) x y v
     | x >= size_x = updateWithValue (resize c (x + 1) size_y) x y v
@@ -155,7 +158,7 @@ updateWithValue c=:{ size_x, size_y, real_size_x, data} x y v
  * @result Updated canvas
  */
 set :: !*Canvas !Int !Int -> *Canvas
-set c x y = updateWithValue c x y 1
+set c x y = updateWithValue c x y True
 
 /**
  * Set pixel with coordinates on Canvas.
@@ -168,7 +171,7 @@ set c x y = updateWithValue c x y 1
  * @result Updated canvas
  */
 unset :: !*Canvas !Int !Int -> *Canvas
-unset c x y = updateWithValue c x y 0
+unset c x y = updateWithValue c x y False
 
 /**
  * Toggle pixel with coordinates on Canvas.
@@ -183,7 +186,7 @@ unset c x y = updateWithValue c x y 0
 toggle :: !*Canvas !Int !Int -> *Canvas
 toggle c x y
     # (v, c) = uget c x y
-    = updateWithValue c x y (1 - v)
+    = updateWithValue c x y (not v)
 
 /**
  * Create Canvas from list of pixel coordinates. These pixels
@@ -207,7 +210,7 @@ create :: !Int !Int -> .Canvas
 create size_x size_y =
     { size_x = size_x, size_y = size_y,
       real_size_x = size_x, real_size_y = size_y,
-      data = createArray (size_x * size_y) 0}
+      data = createArray (size_x * size_y) False}
 
 /**
  * Debug print canvas.
@@ -225,8 +228,8 @@ toString` { size_x = sx, size_y = sy, real_size_x, data = d } = go 0 (createArra
             | otherwise = arr
             where shift = j * (sx + 1)
           charOf e
-            | e == 0 = '_'
-            | e == 1 = '*'
+            | not e = '_'
+            | e = '*'
             | otherwise = '?'
 
 Start :: String
