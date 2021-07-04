@@ -25,11 +25,26 @@ pixmap = {{0x01, 0x08},
 
 // Braille character code to the list of coordinates
 brailleToList :: Int -> [(Int, Int)]
-brailleToList n = filter ((<>) (-1, -1)) 
+brailleToList n = filter ((<>) (-1, -1))
         (flatten [ [(coord px.[0] 0 i), (coord px.[1] 1 i)] \\ px <-: pixmap & i <- [0..3]])
     where coord b x y
             | ((n bitand b) > 0) = (x, y)
             | otherwise = (-1, -1)
+
+// j - columns, i - row
+frame :: Canvas -> [String]
+frame c = [lineToString line \\ line <-: toBrailleCodes c]
+    where lineToString line = go 0 line (createArray (3*size line) ' ')
+          go :: Int .{#Int} *String -> *String
+          go i line=:{[i] = c} s
+            | i == size line = s
+            | otherwise =
+                go (i + 1) line
+                    {s & [3*i] = '\xE2',
+                         [3*i + 1] = toChar v,
+                         [3*i + 2] = toChar ((0xBF bitand c) bitor 0x80)}
+                where v = 0xA0 + (c bitand pixmap.[3].[0])/pixmap.[3].[0]
+                               + (c bitand pixmap.[3].[1])/pixmap.[3].[0]
 
 toBrailleCodes :: Canvas -> {*{#Int}}
 toBrailleCodes c=:{ size_x, size_y, real_size_x, real_size_y, data} =
@@ -137,7 +152,7 @@ toString` { size_x = sx, size_y = sy, real_size_x, data = d } = go 0 (createArra
             | e == 1 = '*'
             | otherwise = '?'
 
-Start = toBrailleCodes (fromList (brailleToList 0xF8))
+Start = frame (fromList (brailleToList 0xF8))
 
 /*
 Start :: String
