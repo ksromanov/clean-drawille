@@ -3,6 +3,8 @@ module main
 import StdEnv
 import Drawille
 
+import Gast
+
 /* Testing driver module for Drawille. */
 
 Start :: String
