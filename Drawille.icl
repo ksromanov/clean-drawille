@@ -3,7 +3,16 @@ module Drawille
 import StdEnv
 import StdDebug
 
-// FIXME: change the type of the value.
+:: PixelValue :== Bool
+
+setPixel   :== True
+unsetPixel :== False
+
+togglePixelValue v :== not v
+
+valueToInt  True = 1
+valueToInt False = 0
+
 /**
  * Canvas for drawing with Braille characters.
  * @var current X dimension
@@ -11,10 +20,7 @@ import StdDebug
  * @var array, which contains the bitmap in rows
  */
 :: Canvas = { size_x :: !Int, size_y :: !Int,
-              real_size_x :: !Int, real_size_y :: !Int, data :: !.{#Bool}}
-
-valueToInt True = 1
-valueToInt False = 0
+              real_size_x :: !Int, real_size_y :: !Int, data :: !.{#PixelValue}}
 
 pixmap :: {#{#Int}}
 pixmap = {{0x01, 0x08},
@@ -93,7 +99,7 @@ empty => { size_x = 0, size_y = 0,
  *
  * @result The value of pixel
  */
-get :: !Canvas !Int !Int -> Bool
+get :: !Canvas !Int !Int -> PixelValue
 get c x y = fst (uget c x y)
 
 /**
@@ -106,7 +112,7 @@ get c x y = fst (uget c x y)
  *
  * @result The value of pixel and unmodified canvas 
  */
-uget :: !u:Canvas !Int !Int -> *(Bool, v:Canvas), [u <= v]
+uget :: !u:Canvas !Int !Int -> *(PixelValue, v:Canvas), [u <= v]
 uget c=:{ size_x, size_y, real_size_x, data} x y
     # (v, data`) = uselect data (x + y * real_size_x)
     = (v, { c & data = data` })
@@ -125,13 +131,13 @@ uget c=:{ size_x, size_y, real_size_x, data} x y
  */
 resize :: !*Canvas !Int !Int -> *Canvas
 resize c=:{ size_x, size_y, real_size_x, real_size_y, data} x y
-    | (x < c.real_size_x && y < c.real_size_y) = {c & size_x = x, size_y = y} // FIXME: < -> <=
+    | (x < c.real_size_x && y < c.real_size_y) = {c & size_x = x, size_y = y}
     | otherwise = { size_x = x, size_y = y,
                     real_size_x = rx, real_size_y = ry,
-                    data = go 0 data (createArray (rx * ry) False) }
+                    data = go 0 data (createArray (rx * ry) unsetPixel) }
         where (rx, ry) = (3*x/2 + 2, 3*y/2 + 2)
 
-              go :: Int !.{#Bool} !*{#Bool} -> *{#Bool}
+              go :: Int !.{#PixelValue} !*{#PixelValue} -> *{#PixelValue}
               go j src dst
                  | j == size_y = dst
                  # dst = {dst & [i + dst_shift] = src.[i + src_shift] \\ i <- [0..(size_x - 1)]}
@@ -140,11 +146,14 @@ resize c=:{ size_x, size_y, real_size_x, real_size_y, data} x y
                     where src_shift = j*real_size_x
                           dst_shift = j*rx
 
-updateWithValue :: !*Canvas !Int !Int !Bool -> *Canvas
+// Update given pixel with value. Does resize if pixel coordinates are
+// out of range.
+updateWithValue :: !*Canvas !Int !Int !PixelValue -> *Canvas
 updateWithValue c=:{ size_x, size_y, real_size_x, data} x y v
     | (x >= size_x && y >= size_y) = updateWithValue (resize c (x + 1) (y + 1)) x y v
     | x >= size_x = updateWithValue (resize c (x + 1) size_y) x y v
     | y >= size_y = updateWithValue (resize c size_x (y + 1)) x y v
+
     | otherwise = {c & data = { data & [x + real_size_x * y] = v }}
 
 /**
@@ -158,7 +167,7 @@ updateWithValue c=:{ size_x, size_y, real_size_x, data} x y v
  * @result Updated canvas
  */
 set :: !*Canvas !Int !Int -> *Canvas
-set c x y = updateWithValue c x y True
+set c x y = updateWithValue c x y setPixel
 
 /**
  * Set pixel with coordinates on Canvas.
@@ -171,7 +180,7 @@ set c x y = updateWithValue c x y True
  * @result Updated canvas
  */
 unset :: !*Canvas !Int !Int -> *Canvas
-unset c x y = updateWithValue c x y False
+unset c x y = updateWithValue c x y unsetPixel
 
 /**
  * Toggle pixel with coordinates on Canvas.
@@ -186,7 +195,7 @@ unset c x y = updateWithValue c x y False
 toggle :: !*Canvas !Int !Int -> *Canvas
 toggle c x y
     # (v, c) = uget c x y
-    = updateWithValue c x y (not v)
+    = updateWithValue c x y (togglePixelValue v)
 
 /**
  * Create Canvas from list of pixel coordinates. These pixels
@@ -210,7 +219,7 @@ create :: !Int !Int -> .Canvas
 create size_x size_y =
     { size_x = size_x, size_y = size_y,
       real_size_x = size_x, real_size_y = size_y,
-      data = createArray (size_x * size_y) False}
+      data = createArray (size_x * size_y) unsetPixel}
 
 /**
  * Debug print canvas.
